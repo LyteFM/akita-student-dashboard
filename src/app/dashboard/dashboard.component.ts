@@ -1,5 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { createStudent, StudentService, StudentQuery, Student } from './state/index';
+import {
+  createStudent,
+  StudentService,
+  StudentQuery,
+  Student
+} from './state/index';
 import { ID } from '@datorama/akita';
 import { Observable } from 'rxjs';
 
@@ -12,7 +17,10 @@ export class DashboardComponent implements OnInit {
   formData: Student;
   students$: Observable<Array<Student>>;
 
-  constructor(private studentService: StudentService, public studentQuery: StudentQuery) {}
+  constructor(
+    private studentService: StudentService,
+    public studentQuery: StudentQuery
+  ) {}
 
   ngOnInit() {
     this.studentService.getStudents().subscribe();
@@ -23,15 +31,15 @@ export class DashboardComponent implements OnInit {
     this.nullifyFormData();
     setTimeout(() => (this.formData = createStudent({})));
   }
-  onEdit(id: ID) {
+  onEdit(_id: ID) {
     this.nullifyFormData();
-    setTimeout(() => (this.formData = this.studentQuery.getEntity(id)));
+    setTimeout(() => (this.formData = this.studentQuery.getEntity(_id)));
   }
 
-  onDelete(id: ID) {
+  onDelete(_id: ID) {
     this.nullifyFormData();
     if (confirm('Are you sure to delete?')) {
-      this.studentService.deleteStudent(id);
+      this.studentService.deleteStudent(_id);
     }
   }
 

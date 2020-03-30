@@ -1,7 +1,12 @@
 <div class="col-sm">
   <div class="card rounded-0">
     <div class="card-header">
-      Grid<button class="btn btn-sm btn-primary pull-right" (click)="add.emit()">Add</button>
+      Grid<button
+        class="btn btn-sm btn-primary pull-right"
+        (click)="add.emit()"
+      >
+        Add
+      </button>
     </div>
     <div class="card-body">
       <p-table [value]="students$ | async">
@@ -25,9 +30,19 @@
             <td>{{ student.halfyearlyScore }}/100</td>
             <td>{{ student.annualScore }}/100</td>
             <td>
-              <button class="btn btn-sm btn-link" (click)="edit.emit(student.id)">Edit</button>
+              <button
+                class="btn btn-sm btn-link"
+                (click)="edit.emit(student._id)"
+              >
+                Edit
+              </button>
               &nbsp;|&nbsp;
-              <button class="btn btn-sm btn-link" (click)="delete.emit(student.id)">Delete</button>
+              <button
+                class="btn btn-sm btn-link"
+                (click)="delete.emit(student._id)"
+              >
+                Delete
+              </button>
             </td>
           </tr>
         </ng-template>

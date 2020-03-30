@@ -21,7 +21,7 @@ export class FormComponent implements OnInit {
 
   createForm() {
     this.formGroup = this.fb.group({
-      id: [this.formData.id, Validators.required],
+      _id: [this.formData._id, Validators.required],
       name: [this.formData.name, Validators.required],
       sex: [this.formData.sex, Validators.required],
       standard: [this.formData.standard, Validators.required],

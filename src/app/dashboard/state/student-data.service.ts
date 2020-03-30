@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
-import { timer, Observable } from 'rxjs';
-import { mapTo } from 'rxjs/operators';
+import { Observable, from } from 'rxjs';
 import { Student } from './student.model';
 import { guid } from '@datorama/akita';
+import PouchDB from 'pouchdb';
+import { filter } from 'rxjs/operators';
 
 const students: Array<Student> = [
   {
-    id: guid(),
+    _id: guid(),
     name: 'Mohan Ram',
     sex: 'Male',
     standard: 12,
@@ -15,7 +16,7 @@ const students: Array<Student> = [
     annualScore: 89
   },
   {
-    id: guid(),
+    _id: guid(),
     name: 'Sowmiya',
     sex: 'Female',
     standard: 11,
@@ -24,7 +25,7 @@ const students: Array<Student> = [
     annualScore: 97
   },
   {
-    id: guid(),
+    _id: guid(),
     name: 'Suresh',
     sex: 'Male',
     standard: 8,
@@ -33,7 +34,7 @@ const students: Array<Student> = [
     annualScore: 58
   },
   {
-    id: guid(),
+    _id: guid(),
     name: 'Rithika',
     sex: 'Female',
     standard: 4,
@@ -47,10 +48,41 @@ const students: Array<Student> = [
   providedIn: 'root'
 })
 export class StudentDataService {
-  constructor() {}
+  db: PouchDB.Database;
+  constructor() {
+    this.db = new PouchDB('students');
+    this.db
+      .info()
+      .then((info) => {
+        if (info.doc_count) {
+          return Promise.resolve();
+        } else {
+          console.log('seeding student data');
+          this.db.bulkDocs(students);
+        }
+      })
+      .then(() => console.log('Pouch initialised.'));
+  }
 
-  /** simulates the response of an HTTP request fetching the students */
-  getStudents(): Observable<Array<Student>> {
-    return timer(200).pipe(mapTo(students));
+  get(): Observable<Array<Student>> {
+    return from(
+      this.db
+        .allDocs({ include_docs: true })
+        .then((resp) =>
+          resp.rows.map((row) => row.doc).map((doc) => doc as Student)
+        )
+        .then((res) => {
+          console.log('got res:', res);
+          return res;
+        })
+    );
+  }
+
+  upsert(student: Student) {
+    return this.db.put(student);
+  }
+
+  delete(student: Partial<Student>) {
+    return this.db.remove(student._id, student._rev);
   }
 }

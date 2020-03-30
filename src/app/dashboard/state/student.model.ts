@@ -1,7 +1,8 @@
-import { guid, ID } from '@datorama/akita';
+import { guid } from '@datorama/akita';
 
 export interface Student {
-  id: ID;
+  _id: string;
+  _rev?: string;
   name: string;
   sex: 'Male' | 'Female';
   standard: number;
@@ -19,7 +20,7 @@ export function createStudent({
   annualScore = 0
 }: Partial<Student>) {
   return {
-    id: guid(),
+    _id: guid(),
     name,
     sex,
     standard,
