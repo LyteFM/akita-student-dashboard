@@ -25,6 +25,7 @@
     "@datorama/akita-ng-entity-service": "^1.0.0",
     "bootstrap": "^4.4.1",
     "chart.js": "^2.9.3",
+    "date-fns": "^2.11.1",
     "font-awesome": "^4.7.0",
     "pouchdb": "^7.2.1",
     "primeicons": "^2.0.0",

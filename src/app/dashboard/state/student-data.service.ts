@@ -7,7 +7,8 @@ import { filter } from 'rxjs/operators';
 
 const students: Array<Student> = [
   {
-    _id: guid(),
+    _id: `2011-10-05T14:48:00Z_${guid()}`,
+    added: '2011-10-05T14:48:00Z',
     name: 'Mohan Ram',
     sex: 'Male',
     standard: 12,
@@ -16,7 +17,8 @@ const students: Array<Student> = [
     annualScore: 89
   },
   {
-    _id: guid(),
+    _id: `2011-10-01T14:48:00Z_${guid()}`,
+    added: '2011-10-01T14:48:00Z',
     name: 'Sowmiya',
     sex: 'Female',
     standard: 11,
@@ -25,7 +27,8 @@ const students: Array<Student> = [
     annualScore: 97
   },
   {
-    _id: guid(),
+    _id: `2011-10-01T12:48:00Z_${guid()}`,
+    added: '2011-10-01T12:48:00Z',
     name: 'Suresh',
     sex: 'Male',
     standard: 8,
@@ -34,13 +37,44 @@ const students: Array<Student> = [
     annualScore: 58
   },
   {
-    _id: guid(),
+    _id: `2011-10-02T10:48:00Z_${guid()}`,
+    added: '2011-10-02T10:48:00Z',
     name: 'Rithika',
     sex: 'Female',
     standard: 4,
     quarterlyScore: 87,
     halfyearlyScore: 67,
     annualScore: 78
+  },
+  {
+    _id: `2011-10-04T10:55:00Z_${guid()}`,
+    added: '2011-10-04T10:55:00Z',
+    name: 'Bernie',
+    sex: 'Male',
+    standard: 4,
+    quarterlyScore: 87,
+    halfyearlyScore: 67,
+    annualScore: 78
+  },
+  {
+    _id: `2011-10-04T18:55:00Z_${guid()}`,
+    added: '2011-10-04T18:55:00Z',
+    name: 'Jessica',
+    sex: 'Female',
+    standard: 4,
+    quarterlyScore: 97,
+    halfyearlyScore: 67,
+    annualScore: 85
+  },
+  {
+    _id: `2011-10-05T19:48:00Z_${guid()}`,
+    added: '2011-10-05T19:48:00Z',
+    name: 'Karl',
+    sex: 'Male',
+    standard: 9,
+    quarterlyScore: 85,
+    halfyearlyScore: 56,
+    annualScore: 70
   }
 ];
 
