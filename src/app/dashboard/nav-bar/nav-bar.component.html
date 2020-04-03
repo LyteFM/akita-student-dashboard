@@ -6,11 +6,34 @@
       </li>
     </ul>
     <ul class="navbar-nav">
+      <li class="nav-item">
+        <button
+          type="button"
+          class="btn btn-sm"
+          (click)="paginatorRef?.prevPage()"
+        >
+          Previous
+        </button>
+      </li>
+      <li class="nav-username">
+        <span class="username"> {{ paginatorRef?.currentPage }} </span>
+      </li>
+      <li class="nav-item">
+        <button
+          type="button"
+          class="btn btn-sm"
+          (click)="paginatorRef?.nextPage()"
+        >
+          Next
+        </button>
+      </li>
       <li class="nav-item nav-username">
         <span class="username">{{ sessionQuery.loggedInUser$ | async }}</span>
       </li>
       <li class="nav-item">
-        <button type="button" class="btn btn-default btn-sm" (click)="logout()">Log out</button>
+        <button type="button" class="btn btn-default btn-sm" (click)="logout()">
+          Log out
+        </button>
       </li>
     </ul>
   </div>

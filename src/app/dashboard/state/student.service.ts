@@ -1,24 +1,54 @@
-import { Injectable, OnInit } from '@angular/core';
-import { ID, StateHistoryPlugin } from '@datorama/akita';
+import { Injectable, OnInit, Inject } from '@angular/core';
+import { ID, StateHistoryPlugin, PaginationResponse } from '@datorama/akita';
 import { StudentStore, StudentState } from './student.store';
 import { Student } from './student.model';
-import { tap } from 'rxjs/operators';
+import { tap, switchMap, mergeMap, concatAll, map } from 'rxjs/operators';
 import { StudentDataService } from './student-data.service';
 import { StudentQuery } from './student.query';
 import { Observable, of } from 'rxjs';
+import {
+  CustomPaginationResponse,
+  CustomPaginatorPlugin
+} from 'src/app/paginator/customPaginator';
+import { STUDENT_PAGINATOR } from './student.paginator';
 
 @Injectable({ providedIn: 'root' })
 export class StudentService {
   stateHistory: StateHistoryPlugin<StudentState>;
+  students$: Observable<CustomPaginationResponse<Student>>;
+
   constructor(
     private studentStore: StudentStore,
     private studentDataService: StudentDataService,
-    private studentQuery: StudentQuery
+    private studentQuery: StudentQuery,
+    @Inject(STUDENT_PAGINATOR)
+    private paginatorRef: CustomPaginatorPlugin<Student>
   ) {
     this.stateHistory = new StateHistoryPlugin(this.studentQuery);
+
+    // @ts-ignore // todo: should check why this is marked... should have correct types like in example
+    this.students$ = this.paginatorRef.pageChanges.pipe(
+      switchMap((page) => {
+        console.log('pageChanges() - page: ', page);
+        const requestFn = () => this.getStudentsForDate(<string>page);
+        return this.paginatorRef.getPage(requestFn);
+      })
+    );
   }
 
-  getStudents(): Observable<Array<Student>> {
+  getStudentsForDate(dateStr: string) {
+    return this.studentDataService.get(dateStr).pipe(
+      map((data) => {
+        return <CustomPaginationResponse<Student>>{
+          currentPage: dateStr,
+          data: data
+        };
+      })
+    );
+  }
+
+  /*
+  getStudentsOld(): Observable<Array<Student>> {
     if (!this.studentQuery.getHasCache()) {
       console.log('getStudents() - from db');
       return this.studentDataService.get().pipe(
@@ -32,6 +62,7 @@ export class StudentService {
       return of();
     }
   }
+  */
 
   updateStudent(student: Student) {
     this.studentStore.upsert(student._id, student);

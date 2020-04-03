@@ -3,7 +3,7 @@ import { Observable, from } from 'rxjs';
 import { Student } from './student.model';
 import { guid } from '@datorama/akita';
 import PouchDB from 'pouchdb';
-import { filter } from 'rxjs/operators';
+import { parseISO, startOfDay, endOfDay, formatISO } from 'date-fns';
 
 const students: Array<Student> = [
   {
@@ -98,15 +98,20 @@ export class StudentDataService {
       .then(() => console.log('Pouch initialised.'));
   }
 
-  get(): Observable<Array<Student>> {
+  get(dateStr: string): Observable<Array<Student>> {
+    console.log('get() - with dateStr: ', dateStr);
+
+    const start = formatISO(startOfDay(parseISO(dateStr)));
+    const end = formatISO(endOfDay(parseISO(dateStr)));
+
     return from(
       this.db
-        .allDocs({ include_docs: true })
+        .allDocs({ include_docs: true, startkey: start, endkey: end })
         .then((resp) =>
           resp.rows.map((row) => row.doc).map((doc) => doc as Student)
         )
         .then((res) => {
-          console.log('got res:', res);
+          console.log('get() - got res:', res);
           return res;
         })
     );

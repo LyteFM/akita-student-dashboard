@@ -5,38 +5,26 @@
 // b) with a single key (e.g. YYYY-MM-DD) and treat the actual request as implementation detail.
 //    easier to get started with, could pass a `request_builder` as function.
 
+// todo: add pre-fetch logic!
+
+import { BehaviorSubject, from, isObservable, Observable, Subscription } from 'rxjs';
+import { delay, map, switchMap, take } from 'rxjs/operators';
+
 import {
-  ID,
-  EntityState,
-  AkitaPlugin,
-  getEntityType,
-  QueryEntity,
-  action,
-  logAction,
-  isUndefined,
-  applyTransaction,
-  isNil
+    action, AkitaPlugin, applyTransaction, EntityState, getEntityType, ID, isNil, isUndefined, logAction, QueryEntity
 } from '@datorama/akita';
-import {
-  Observable,
-  BehaviorSubject,
-  Subscription,
-  isObservable,
-  from
-} from 'rxjs';
-import { delay, switchMap, take, map } from 'rxjs/operators';
 
 export interface CustomPaginationResponse<E> {
   /** the identifier of the current page, not necessarily a number */
   currentPage: ID;
-  lastPage: ID;
   data: E[];
 
-  /** maybe: current range */
+  /** these are only available if using numbers? */
+  lastPage?: ID;
   from?: ID;
   to?: ID;
-  /** the identifiers of the pages available in this response */
   pageControls?: ID[];
+  total?: number;
 }
 
 export type CustomPaginatorConfig = {
@@ -68,8 +56,6 @@ export class CustomPaginatorPlugin<
   private readonly clearCacheSubscription: Subscription;
 
   private pagination: CustomPaginationResponse<getEntityType<State>>;
-  private forward: (cur: ID) => ID = (cur) => <number>cur + 1;
-  private backward: (cur: ID) => ID = (cur) => <number>cur - 1;
 
   /**
    * When the user navigates to a different page and return
@@ -79,7 +65,9 @@ export class CustomPaginatorPlugin<
 
   constructor(
     protected query: QueryEntity<State>,
-    public config: CustomPaginatorConfig
+    public config: CustomPaginatorConfig,
+    private forward: (cur: ID) => ID = (cur) => <number>cur + 1,
+    private backward: (cur: ID) => ID = (cur) => <number>cur - 1
   ) {
     super(query, {
       resetFn: () => {
@@ -90,14 +78,14 @@ export class CustomPaginatorPlugin<
 
     this.pagination = {
       currentPage: config.defaultPage,
-      lastPage: typeof config.defaultPage === 'string' ? '' : 0,
+      //lastPage: typeof config.defaultPage === 'string' ? '' : 0,
       data: []
     };
-    this.config = { ...paginatorDefaults };
-    const { startWith, cacheTimeout } = this.config;
-    this.page = new BehaviorSubject(startWith);
-    if (isObservable(cacheTimeout)) {
-      this.clearCacheSubscription = cacheTimeout.subscribe(() =>
+    this.config = { ...paginatorDefaults, ...config };
+    console.log('CustomPaginator() - config now: ', this.config);
+    this.page = new BehaviorSubject(this.config.startWith);
+    if (isObservable(this.config.cacheTimeout)) {
+      this.clearCacheSubscription = this.config.cacheTimeout.subscribe(() =>
         this.clearCache()
       );
     }
@@ -120,38 +108,6 @@ export class CustomPaginatorPlugin<
    */
   get currentPage() {
     return this.pagination.currentPage;
-  }
-
-  /**
-   * Check if current page is the first one
-   */
-  get isFirst() {
-    return this.currentPage === this.config.defaultPage;
-  }
-
-  /**
-   * Check if current page is the last one
-   */
-  get isLast() {
-    return this.currentPage === this.pagination.lastPage;
-  }
-
-  /**
-   * Whether to generate an array of pages for *ngFor
-   * [1, 2, 3, 4]
-   */
-  withControls() {
-    this.config.pagesControls = true;
-    return this;
-  }
-
-  /**
-   * Whether to generate the `from` and `to` keys
-   * [1, 2, 3, 4]
-   */
-  withRange() {
-    this.config.range = true;
-    return this;
   }
 
   /**
@@ -192,6 +148,7 @@ export class CustomPaginatorPlugin<
         (this.config.clearStoreWithCache || options.clearStore)
       ) {
         this.getStore().remove();
+        console.log('clearCache() - also cleared the store!');
       }
 
       this.pages = new Map();
@@ -243,18 +200,14 @@ export class CustomPaginatorPlugin<
    * Increment current page
    */
   nextPage() {
-    if (this.currentPage !== this.pagination.lastPage) {
-      this.setPage(this.forward(this.pagination.currentPage));
-    }
+    this.setPage(this.forward(this.pagination.currentPage));
   }
 
   /**
    * Decrement current page
    */
   prevPage() {
-    if (this.pagination.currentPage > 1) {
-      this.setPage(this.backward(this.pagination.currentPage));
-    }
+    this.setPage(this.backward(this.pagination.currentPage));
   }
 
   /**
@@ -275,6 +228,7 @@ export class CustomPaginatorPlugin<
       return this.selectPage(page);
     } else {
       this.setLoading(true);
+      console.log('customPaginator.getPage() - for page: ', page);
       return from(req()).pipe(
         switchMap((config: CustomPaginationResponse<getEntityType<State>>) => {
           page = config.currentPage;
@@ -303,6 +257,7 @@ export class CustomPaginatorPlugin<
    * todo: this won't work... need to check where used...does it make sense to use startWith???
    * should retrieve this from the current array...
    */
+  /*
   private getFrom() {
     if (this.isFirst) {
       return 1;
@@ -316,6 +271,7 @@ export class CustomPaginatorPlugin<
     }
     return this.currentPage * this.pagination.perPage;
   }
+  */
 
   /**
    * Select the page
@@ -331,9 +287,12 @@ export class CustomPaginatorPlugin<
           data: this.pages.get(page).ids.map((id) => entities[id])
         };
 
+        console.log('selectPage() - got response: ', response);
+
+        /*
         const { range, pagesControls } = this.config;
 
-        /** If no total - calc it. todo: not via total, but dynamically from the content */
+        //If no total - calc it.
         if (isNaN(this.pagination.total)) {
           if (response.lastPage === 1) {
             response.total = response.data ? response.data.length : 0;
@@ -354,21 +313,10 @@ export class CustomPaginatorPlugin<
             this.pagination.perPage
           );
         }
+        */
 
         return response;
       })
     );
   }
-}
-
-/**
- * Generate an array so we can ngFor them to navigate between pages
- */
-function generatePages(total: number, perPage: number) {
-  const len = Math.ceil(total / perPage);
-  let arr = [];
-  for (let i = 0; i < len; i++) {
-    arr.push(i + 1);
-  }
-  return arr;
 }

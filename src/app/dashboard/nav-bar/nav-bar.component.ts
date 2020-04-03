@@ -1,6 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { CustomPaginatorPlugin } from 'src/app/paginator/customPaginator';
+
+import { Component, Inject, OnInit } from '@angular/core';
+
 import { LoginService } from '../../login/login.service';
 import { SessionQuery } from '../../login/state/index';
+import { Student, StudentService } from '../state';
+import { STUDENT_PAGINATOR } from '../state/student.paginator';
 
 @Component({
   selector: 'app-nav-bar',
@@ -8,7 +13,12 @@ import { SessionQuery } from '../../login/state/index';
   styleUrls: ['./nav-bar.component.css']
 })
 export class NavBarComponent implements OnInit {
-  constructor(private loginService: LoginService, public sessionQuery: SessionQuery) {}
+  constructor(
+    @Inject(STUDENT_PAGINATOR)
+    public paginatorRef: CustomPaginatorPlugin<Student>,
+    private loginService: LoginService,
+    public sessionQuery: SessionQuery
+  ) {}
 
   ngOnInit() {}
 

@@ -23,6 +23,7 @@ export function createStudent({
   annualScore = 0
 }: Partial<Student>) {
   const now = formatISO(new Date());
+  console.log('createStudent() - now: ', now);
   return {
     _id: `${now}_${guid()}`,
     name,

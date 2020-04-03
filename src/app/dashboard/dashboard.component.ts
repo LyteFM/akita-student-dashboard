@@ -1,12 +1,9 @@
-import { Component, OnInit } from '@angular/core';
-import {
-  createStudent,
-  StudentService,
-  StudentQuery,
-  Student
-} from './state/index';
-import { ID } from '@datorama/akita';
 import { Observable } from 'rxjs';
+
+import { Component, OnInit } from '@angular/core';
+import { ID } from '@datorama/akita';
+
+import { createStudent, Student, StudentQuery, StudentService } from './state/index';
 
 @Component({
   selector: 'app-dashboard',
@@ -23,7 +20,11 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.studentService.getStudents().subscribe();
+    // if I don't subscribe to this, no page changes have effect!
+    this.studentService.students$.subscribe((r) =>
+      console.log('dashboard() - got: ', r)
+    );
+    // todo: this still displays _all_ available students. But just want the current page!!!
     this.students$ = this.studentQuery.selectAll();
   }
 
