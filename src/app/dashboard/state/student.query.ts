@@ -6,10 +6,6 @@ import { map } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
 export class StudentQuery extends QueryEntity<StudentState> {
-  studentsGraphData$ = this.selectAll().pipe(
-    map(this.getStudentGraphData.bind(this))
-  );
-
   constructor(protected store: StudentStore) {
     super(store);
   }

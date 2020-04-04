@@ -15,12 +15,17 @@ export const STUDENT_PAGINATOR = new InjectionToken('STUDENT_PAGINATOR', {
       studentsQuery,
       {
         defaultPage: START_PAGE,
-        startWith: START_PAGE
+        startWith: START_PAGE,
+        preloadRange: 2
       },
-      (d) =>
-        formatISO(addDays(parseISO(<string>d), 1), { representation: 'date' }),
-      (d) =>
-        formatISO(subDays(parseISO(<string>d), 1), { representation: 'date' })
+      (d, step) =>
+        formatISO(addDays(parseISO(<string>d), step), {
+          representation: 'date'
+        }),
+      (d, step) =>
+        formatISO(subDays(parseISO(<string>d), step), {
+          representation: 'date'
+        })
     );
   }
 });

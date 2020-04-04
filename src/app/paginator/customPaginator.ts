@@ -7,11 +7,26 @@
 
 // todo: add pre-fetch logic!
 
-import { BehaviorSubject, from, isObservable, Observable, Subscription } from 'rxjs';
-import { delay, map, switchMap, take } from 'rxjs/operators';
+import {
+  BehaviorSubject,
+  from,
+  isObservable,
+  Observable,
+  Subscription
+} from 'rxjs';
+import { delay, map, switchMap, take, tap } from 'rxjs/operators';
 
 import {
-    action, AkitaPlugin, applyTransaction, EntityState, getEntityType, ID, isNil, isUndefined, logAction, QueryEntity
+  action,
+  AkitaPlugin,
+  applyTransaction,
+  EntityState,
+  getEntityType,
+  ID,
+  isNil,
+  isUndefined,
+  logAction,
+  QueryEntity
 } from '@datorama/akita';
 
 export interface CustomPaginationResponse<E> {
@@ -34,6 +49,7 @@ export type CustomPaginatorConfig = {
   startWith?: ID;
   cacheTimeout?: Observable<number>;
   clearStoreWithCache?: boolean;
+  preloadRange?: number;
 };
 
 const paginatorDefaults: CustomPaginatorConfig = {
@@ -42,7 +58,8 @@ const paginatorDefaults: CustomPaginatorConfig = {
   range: false,
   startWith: 1,
   cacheTimeout: undefined,
-  clearStoreWithCache: true
+  clearStoreWithCache: true,
+  preloadRange: 0
 };
 
 export class CustomPaginatorPlugin<
@@ -66,8 +83,10 @@ export class CustomPaginatorPlugin<
   constructor(
     protected query: QueryEntity<State>,
     public config: CustomPaginatorConfig,
-    private forward: (cur: ID) => ID = (cur) => <number>cur + 1,
-    private backward: (cur: ID) => ID = (cur) => <number>cur - 1
+    private forward: (cur: ID, step?: number) => ID = (cur, step = 1) =>
+      <number>cur + step,
+    private backward: (cur: ID, step?: number) => ID = (cur, step = 1) =>
+      <number>cur - step
   ) {
     super(query, {
       resetFn: () => {
@@ -218,27 +237,59 @@ export class CustomPaginatorPlugin<
   }
 
   /**
-   * Get the current page if it's in cache, otherwise invoke the request
+   * Get the current page if it's in cache, otherwise invoke the request.
+   * Also preloads surrounding pages if the config option is set.
    */
   getPage(
-    req: () => Observable<CustomPaginationResponse<getEntityType<State>>>
+    req: (page?) => Observable<CustomPaginationResponse<getEntityType<State>>>
   ) {
     let page = this.pagination.currentPage;
+    if (this.config.preloadRange) {
+      this.preloadSurroundingPages(req);
+    }
     if (this.hasPage(page)) {
       return this.selectPage(page);
     } else {
       this.setLoading(true);
       console.log('customPaginator.getPage() - for page: ', page);
-      return from(req()).pipe(
+      return from(req(page)).pipe(
         switchMap((config: CustomPaginationResponse<getEntityType<State>>) => {
           page = config.currentPage;
           applyTransaction(() => {
+            console.log('customPaginator.getPage() - retrieved the page.');
             this.setLoading(false);
             this.update(config);
           });
           return this.selectPage(page);
         })
       );
+    }
+  }
+
+  /**
+   * todo: refactor nicely:
+   *  1. generate surrounding pages and filter
+   *  2. make requests concurrent, use rxjs
+   *  3. use operator and single transaction to update
+   * @param req the request for fetching a single page, given its ID
+   */
+  preloadSurroundingPages(
+    req: (page?) => Observable<CustomPaginationResponse<getEntityType<State>>>
+  ) {
+    const fromPage = this.backward(this.currentPage, this.config.preloadRange);
+    const limitPage = this.forward(
+      this.currentPage,
+      this.config.preloadRange + 1
+    );
+    for (let page = fromPage; page !== limitPage; this.forward(page)) {
+      if (!this.hasPage(page)) {
+        req(page).pipe(
+          tap((r) => {
+            this.addPage(r.data);
+            console.log('preload() - added page ', page);
+          })
+        );
+      }
     }
   }
 
