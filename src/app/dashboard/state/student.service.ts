@@ -2,10 +2,10 @@ import { Injectable, OnInit, Inject } from '@angular/core';
 import { ID, StateHistoryPlugin, PaginationResponse } from '@datorama/akita';
 import { StudentStore, StudentState } from './student.store';
 import { Student } from './student.model';
-import { tap, switchMap, mergeMap, concatAll, map } from 'rxjs/operators';
+import { switchMap, map, multicast } from 'rxjs/operators';
 import { StudentDataService } from './student-data.service';
 import { StudentQuery } from './student.query';
-import { Observable, of } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import {
   CustomPaginationResponse,
   CustomPaginatorPlugin
@@ -15,7 +15,8 @@ import { STUDENT_PAGINATOR } from './student.paginator';
 @Injectable({ providedIn: 'root' })
 export class StudentService {
   stateHistory: StateHistoryPlugin<StudentState>;
-  students$: Observable<CustomPaginationResponse<Student>>;
+  students$: any;
+  subject: BehaviorSubject<CustomPaginationResponse<Student>>;
 
   constructor(
     private studentStore: StudentStore,
@@ -25,15 +26,19 @@ export class StudentService {
     private paginatorRef: CustomPaginatorPlugin<Student>
   ) {
     this.stateHistory = new StateHistoryPlugin(this.studentQuery);
-
-    // @ts-ignore // todo: check why types don't work...
+    const subject$ = new BehaviorSubject<CustomPaginationResponse<Student>>({
+      currentPage: '',
+      data: []
+    });
     this.students$ = this.paginatorRef.pageChanges.pipe(
       switchMap((page) => {
         console.log('pageChanges() - page: ', page);
-        const requestFn = () => this.getStudentsForDate(<string>page);
+        const requestFn = (page) => this.getStudentsForDate(<string>page);
         return this.paginatorRef.getPage(requestFn);
-      })
+      }),
+      multicast(subject$)
     );
+    this.students$.connect();
   }
 
   getStudentsForDate(dateStr: string) {

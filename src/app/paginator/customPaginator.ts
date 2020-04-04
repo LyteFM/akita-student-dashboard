@@ -101,8 +101,9 @@ export class CustomPaginatorPlugin<
       data: []
     };
     this.config = { ...paginatorDefaults, ...config };
-    console.log('CustomPaginator() - config now: ', this.config);
     this.page = new BehaviorSubject(this.config.startWith);
+    console.log('CustomPaginator() - config now: ', this.config),
+      'page changed for 1st time.';
     if (isObservable(this.config.cacheTimeout)) {
       this.clearCacheSubscription = this.config.cacheTimeout.subscribe(() =>
         this.clearCache()
@@ -148,8 +149,8 @@ export class CustomPaginatorPlugin<
   /**
    * Set the ids and add the page to store
    */
-  addPage(data: getEntityType<State>[]) {
-    this.pages.set(this.currentPage, {
+  addPage(data: getEntityType<State>[], page = this.currentPage) {
+    this.pages.set(page, {
       ids: data.map((entity) => entity[this.getStore().idKey])
     });
     this.getStore().add(data);
@@ -207,10 +208,12 @@ export class CustomPaginatorPlugin<
   }
 
   /**
-   * Set the current page
+   * Set the current page.
+   * todo: but why also if not in cache? Shouldn't I assume that current page is already loaded?
    */
   setPage(page: ID) {
     if (page !== this.currentPage || !this.hasPage(page)) {
+      console.log('setPage() - next', page);
       this.page.next((this.pagination.currentPage = page));
     }
   }
@@ -253,12 +256,12 @@ export class CustomPaginatorPlugin<
       this.setLoading(true);
       console.log('customPaginator.getPage() - for page: ', page);
       return from(req(page)).pipe(
-        switchMap((config: CustomPaginationResponse<getEntityType<State>>) => {
-          page = config.currentPage;
+        switchMap((res: CustomPaginationResponse<getEntityType<State>>) => {
+          page = res.currentPage;
           applyTransaction(() => {
             console.log('customPaginator.getPage() - retrieved the page.');
             this.setLoading(false);
-            this.update(config);
+            this.update(res);
           });
           return this.selectPage(page);
         })
@@ -273,7 +276,7 @@ export class CustomPaginatorPlugin<
    *  3. use operator and single transaction to update
    * @param req the request for fetching a single page, given its ID
    */
-  preloadSurroundingPages(
+  async preloadSurroundingPages(
     req: (page?) => Observable<CustomPaginationResponse<getEntityType<State>>>
   ) {
     const fromPage = this.backward(this.currentPage, this.config.preloadRange);
@@ -281,14 +284,14 @@ export class CustomPaginatorPlugin<
       this.currentPage,
       this.config.preloadRange + 1
     );
-    for (let page = fromPage; page !== limitPage; this.forward(page)) {
-      if (!this.hasPage(page)) {
-        req(page).pipe(
-          tap((r) => {
-            this.addPage(r.data);
-            console.log('preload() - added page ', page);
-          })
-        );
+    console.log('preload() from ', fromPage, ' to ', limitPage);
+    for (let page = fromPage; page !== limitPage; page = this.forward(page)) {
+      if (page !== this.currentPage && !this.hasPage(page)) {
+        console.log('preload() - trying page: ', page);
+        req(page).subscribe((r) => {
+          this.addPage(r.data, page);
+          console.log('preload() - added page ', page, 'data: ', r.data);
+        });
       }
     }
   }

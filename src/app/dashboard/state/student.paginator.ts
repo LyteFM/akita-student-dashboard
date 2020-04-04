@@ -18,11 +18,11 @@ export const STUDENT_PAGINATOR = new InjectionToken('STUDENT_PAGINATOR', {
         startWith: START_PAGE,
         preloadRange: 2
       },
-      (d, step) =>
+      (d, step = 1) =>
         formatISO(addDays(parseISO(<string>d), step), {
           representation: 'date'
         }),
-      (d, step) =>
+      (d, step = 1) =>
         formatISO(subDays(parseISO(<string>d), step), {
           representation: 'date'
         })
