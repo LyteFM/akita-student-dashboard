@@ -26,7 +26,7 @@ export class StudentService {
   ) {
     this.stateHistory = new StateHistoryPlugin(this.studentQuery);
 
-    // @ts-ignore // todo: should check why this is marked... should have correct types like in example
+    // @ts-ignore // todo: check why types don't work...
     this.students$ = this.paginatorRef.pageChanges.pipe(
       switchMap((page) => {
         console.log('pageChanges() - page: ', page);
@@ -46,23 +46,6 @@ export class StudentService {
       })
     );
   }
-
-  /*
-  getStudentsOld(): Observable<Array<Student>> {
-    if (!this.studentQuery.getHasCache()) {
-      console.log('getStudents() - from db');
-      return this.studentDataService.get().pipe(
-        tap((s) => {
-          console.log('getStudents() - loaded', s);
-          this.studentStore.set(s);
-        })
-      );
-    } else {
-      console.log('getStudents() - from cache');
-      return of();
-    }
-  }
-  */
 
   updateStudent(student: Student) {
     this.studentStore.upsert(student._id, student);

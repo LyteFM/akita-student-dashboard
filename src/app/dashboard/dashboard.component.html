@@ -5,9 +5,7 @@
     </div>
   </div>
   <div class="row">
-    <app-chart
-      [studentsGraphData$]="studentQuery.studentsGraphData$"
-    ></app-chart>
+    <app-chart [studentsGraphData$]="this.studentsGraphData$"></app-chart>
   </div>
   <div class="row">
     <app-grid

@@ -3,7 +3,13 @@ import { Observable } from 'rxjs';
 import { Component, OnInit } from '@angular/core';
 import { ID } from '@datorama/akita';
 
-import { createStudent, Student, StudentQuery, StudentService } from './state/index';
+import {
+  createStudent,
+  Student,
+  StudentQuery,
+  StudentService
+} from './state/index';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -13,6 +19,7 @@ import { createStudent, Student, StudentQuery, StudentService } from './state/in
 export class DashboardComponent implements OnInit {
   formData: Student;
   students$: Observable<Array<Student>>;
+  studentsGraphData$: Observable<{ [key: string]: Array<string | number> }>;
 
   constructor(
     private studentService: StudentService,
@@ -24,8 +31,11 @@ export class DashboardComponent implements OnInit {
     this.studentService.students$.subscribe((r) =>
       console.log('dashboard() - got: ', r)
     );
-    // todo: this still displays _all_ available students. But just want the current page!!!
-    this.students$ = this.studentQuery.selectAll();
+    // this.students$ = this.studentQuery.selectAll(); // before. but now just want current page.
+    this.students$ = this.studentService.students$.pipe(map((r) => r.data));
+    this.studentsGraphData$ = this.students$.pipe(
+      map(this.studentQuery.getStudentGraphData)
+    );
   }
 
   onAdd() {
