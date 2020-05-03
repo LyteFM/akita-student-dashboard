@@ -15,7 +15,6 @@ export interface Student {
 
 export function createStudent({
   name = '',
-  added = '',
   standard = null,
   sex = null,
   quarterlyScore = 0,

@@ -117,6 +117,19 @@ export class StudentDataService {
     );
   }
 
+  /**
+   * I could either implement something like this OR just always load the whole DB
+   * into the store...
+   * - findAllItemsOfType -> sensor, via `type`.
+   * - findTaskItems -> all or single items for `guideRunId`
+   * This approach with a map isn't very smart... better just use the store!!!
+   *  */
+  find(query: any) {
+    return this.db.find(query).then((res) => {
+      return res.docs as Student[];
+    });
+  }
+
   upsert(student: Student) {
     return this.db.put(student);
   }

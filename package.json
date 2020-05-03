@@ -28,6 +28,7 @@
     "date-fns": "^2.12.0",
     "font-awesome": "^4.7.0",
     "pouchdb": "^7.2.1",
+    "pouchdb-find": "^7.2.1",
     "primeicons": "^2.0.0",
     "primeng": "^9.0.6",
     "rxjs": "~6.5.5",

@@ -1,10 +1,13 @@
 import { Injectable } from '@angular/core';
-import { QueryEntity, PaginationResponse } from '@datorama/akita';
+import { QueryEntity, QueryConfig, Order } from '@datorama/akita';
 import { Student } from './student.model';
 import { StudentState, StudentStore } from './student.store';
-import { map } from 'rxjs/operators';
 
 @Injectable({ providedIn: 'root' })
+@QueryConfig({
+  sortBy: '_id',
+  sortByOrder: Order.ASC
+})
 export class StudentQuery extends QueryEntity<StudentState> {
   constructor(protected store: StudentStore) {
     super(store);

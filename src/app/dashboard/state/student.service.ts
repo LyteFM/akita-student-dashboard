@@ -2,10 +2,10 @@ import { Injectable, OnInit, Inject } from '@angular/core';
 import { ID, StateHistoryPlugin, PaginationResponse } from '@datorama/akita';
 import { StudentStore, StudentState } from './student.store';
 import { Student } from './student.model';
-import { switchMap, map, multicast } from 'rxjs/operators';
+import { switchMap, map, multicast, filter, tap } from 'rxjs/operators';
 import { StudentDataService } from './student-data.service';
 import { StudentQuery } from './student.query';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, from } from 'rxjs';
 import {
   CustomPaginationResponse,
   CustomPaginatorPlugin
@@ -17,6 +17,14 @@ export class StudentService {
   stateHistory: StateHistoryPlugin<StudentState>;
   students$: any;
   subject: BehaviorSubject<CustomPaginationResponse<Student>>;
+  /** queries against PouchDB that have already been made */
+  queryCache: Set<string> = new Set();
+  /**
+   * queries have been made against this key. If a new docs comes in
+   * via sync that has this type, I'd need to invalidate -> unless I say
+   * that any new doc will always be added to the store!!!
+   */
+  keyToQuery: Map<string, string> = new Map();
 
   constructor(
     private studentStore: StudentStore,
@@ -33,7 +41,7 @@ export class StudentService {
     this.students$ = this.paginatorRef.pageChanges.pipe(
       switchMap((page) => {
         console.log('pageChanges() - page: ', page);
-        const requestFn = (page) => this.getStudentsForDate(<string>page);
+        const requestFn = (p: string) => this.getStudentsForDate(<string>p);
         return this.paginatorRef.getPage(requestFn);
       }),
       multicast(subject$)
@@ -52,8 +60,26 @@ export class StudentService {
     );
   }
 
+  async findStudents(by: 'sex' | 'name', value: string) {
+    let selector = {};
+    selector[by] = value;
+    const q = { selector };
+    const qStr = JSON.stringify(q);
+    if (this.queryCache.has(qStr)) {
+      return this.studentQuery.selectAll({
+        filterBy: (s) => s[by] === value
+      });
+    } else {
+      return from(this.studentDataService.find(q)).pipe(
+        tap((res) => this.studentStore.upsertMany(res))
+      );
+    }
+  }
+
   updateStudent(student: Student) {
     this.studentStore.upsert(student._id, student);
+    // todo: if this method was called very frequently, I'd like to have a
+    // debounce, making sure it's only called once per second...
     this.studentDataService.upsert(student).catch((err) => {
       console.error(err);
       alert(`Could not update student ${student.name}, reverting...`);
@@ -70,7 +96,7 @@ export class StudentService {
       alert(`Could not save student ${student.name}, reverting...`);
       if (this.stateHistory.hasPast) {
         // @ts-ignore
-        this.stateHistory.undo(studient._id);
+        this.stateHistory.undo(student._id);
       }
     });
   }
